@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 interface Language {
@@ -6,42 +6,66 @@ interface Language {
   name: string
 }
 
-const languages: Language[] = [
-  { code: 'en', name: 'English' },
-  { code: 'po', name: 'Portuguese' },
-]
-
 const LanguageDropdown: React.FC = () => {
-  const [selected, setSelected] = useState<Language>(languages[0])
+  const [languages, setLanguages] = useState<Language[]>([])
+  const [selected, setSelected] = useState<Language | null>(null)
   const [open, setOpen] = useState(false)
 
-  const toggleDropdown = () => setOpen(!open)
+  useEffect(() => {
+    const fetchLanguage = async () => {
+      try {
+        const response = await fetch('https://shop.sprwforge.com/api/v1/common')
+        const data = await response.json()
+
+        const langs: Language[] =
+          data?.data?.languages?.map(
+            (lang: { code: string; name: string }) => ({
+              code: lang.code,
+              name: lang.name,
+            })
+          ) || []
+
+        setLanguages(langs)
+        setSelected(langs[0])
+      } catch (error) {
+        console.error('There was a problem loading the language list.', error)
+      }
+    }
+
+    fetchLanguage()
+  }, [])
+
   const selectLanguage = (lang: Language) => {
     setSelected(lang)
     setOpen(false)
   }
 
+  if (!selected) return null
+
   return (
-    <div className='relative max-w-7xl mx-auto'>
+    <div className='relative'>
+      {/* Dropdown button */}
       <button
-        onClick={toggleDropdown}
-        className=' bg-white border rounded-md shadow-sm flex  items-center focus:outline-none focus:ring-1 focus:ring-purple-800'
+        onClick={() => setOpen(!open)}
+        className='max-w-7xl flex items-center justify-between  bg-white rounded-md shadow-sm text-sm md:text-base focus:outline-none focus:ring-1 focus:ring-purple-800 '
       >
         {selected.name}
         <ChevronDown
-          className={`transition-transform duration-200 ${
+          size={18}
+          className={`ml-2 transition-transform duration-200 ${
             open ? 'rotate-180' : ''
           }`}
-          size={20}
         />
       </button>
+
+      {/* Dropdown list */}
       {open && (
-        <ul className='absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg text-sm md:text-base '>
+        <ul className='absolute mt-1  bg-white border rounded-md shadow-lg z-10'>
           {languages.map((lang) => (
             <li
               key={lang.code}
               onClick={() => selectLanguage(lang)}
-              className='px-4 py-2 cursor-pointe hover:bg-gray-200'
+              className='px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer'
             >
               {lang.name}
             </li>
